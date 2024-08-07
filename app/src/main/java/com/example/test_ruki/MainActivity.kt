@@ -1,11 +1,11 @@
+// MainActivity.kt
 package com.example.test_ruki
 
 import android.os.Bundle
 import android.widget.Button
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import kotlin.random.Random
 
 enum class CellState {
@@ -15,19 +15,37 @@ enum class CellState {
 class MainActivity : AppCompatActivity() {
 
     private val cells = mutableListOf<CellState>()
-    private lateinit var cellContainer: LinearLayout
+    private lateinit var cellRecyclerView: RecyclerView
+    private lateinit var cellAdapter: CellAdapter
     private lateinit var addCellButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        cellContainer = findViewById(R.id.cellContainer)
+        cellRecyclerView = findViewById(R.id.cellRecyclerView)
         addCellButton = findViewById(R.id.addCellButton)
+
+        if (savedInstanceState != null) {
+            val savedCells = savedInstanceState.getStringArrayList("cells")
+            savedCells?.let {
+                cells.clear()
+                cells.addAll(it.map { cell -> CellState.valueOf(cell) })
+            }
+        }
+
+        cellAdapter = CellAdapter(cells)
+        cellRecyclerView.adapter = cellAdapter
+        cellRecyclerView.layoutManager = LinearLayoutManager(this)
 
         addCellButton.setOnClickListener {
             addNewCell()
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putStringArrayList("cells", ArrayList(cells.map { it.name }))
     }
 
     private fun addNewCell() {
@@ -45,20 +63,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        updateView()
-    }
-
-    private fun updateView() {
-        cellContainer.removeAllViews()
-        for (cell in cells) {
-            val imageView = ImageView(this)
-            val drawableId = when (cell) {
-                CellState.ALIVE -> R.drawable.alive_cell
-                CellState.DEAD -> R.drawable.dead_cell
-                CellState.LIFE -> R.drawable.life_cell
-            }
-            imageView.setImageResource(drawableId)
-            cellContainer.addView(imageView)
-        }
+        cellAdapter.notifyDataSetChanged()
     }
 }
